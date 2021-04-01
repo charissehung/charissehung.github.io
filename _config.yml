@@ -6,7 +6,7 @@
 name: My PIC16B Blog
 
 # Short bio or description (displayed in the header)
-description: Awesome Python Student
+description: Charisse Hung
 
 # URL of your avatar or profile pic (you could use your GitHub profile pic)
 avatar: https://raw.githubusercontent.com/PIC16B/PIC16B.github.io/master/images/ucla-math.png
@@ -18,15 +18,15 @@ avatar: https://raw.githubusercontent.com/PIC16B/PIC16B.github.io/master/images/
 # Includes an icon in the footer for each username you enter
 footer-links:
   dribbble:
-  email:
+  email: chung2000@g.ucla.edu
   facebook:
   flickr:
-  github: PIC16B/pic16b.github.io # replace with your repo
+  github: charissehung.github.io # replace with your repo
   instagram:
   linkedin:
   pinterest:
   rss: # just type anything here for a working RSS icon
-  twitter: 
+  twitter:
   stackoverflow: # your stackoverflow profile, e.g. "users/50476/bart-kiers"
   youtube: # channel/<your_long_string> or user/<user-name>
   googleplus: # anything in your profile username that comes after plus.google.com/
