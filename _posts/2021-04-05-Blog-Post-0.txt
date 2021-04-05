@@ -1,0 +1,6 @@
+---
+layout: post
+title: Blog Post 0
+---
+
+In this post I will be giving a tutorial on how to make an interesting scatterplot from the Palmer Penguins dataset.
