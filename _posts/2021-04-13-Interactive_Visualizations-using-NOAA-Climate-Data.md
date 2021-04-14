@@ -57,7 +57,7 @@ stations = stations.rename(columns = {"FIPS 10-4" : "FIPS", "ISO 3166" : "ISO", 
 stations.to_sql("countries", conn, if_exists = "replace", index = False)
 ```
 
-Now that the tables are in the temps database, the following code checks what tables are present in the data base and what columns are in each table.
+Now that the tables are in the temps database, the following code checks what tables are present in the database and what columns are in each table.
 
 ``` python
 #check and see what is in the database
@@ -96,7 +96,7 @@ conn.close()
 ```
 
 
-## Write a Query functions
+## Write a Query Function
 
 I created a query function for the temps database. It takes four arguments: a country, two integers that give the earliest and latest years, and a month for which the data should be returned. The function outputs a pandas dataframe of temperature readings for the specified country, in the specified date range, and in the specified month of the day.
 
@@ -141,6 +141,15 @@ I have created 3 interactive visualizations that showcase different aspects of t
 
 This first visualization addresses the question: How does the average yearly change in temperature vary within a given country?
 
+
+A few packages will be necessary to achieve this. `sklearn` is used for linear regression, `datetime` converts numbers to their corresponding month names, and `plotly` is used to create the interactive visualizations.
+
+```python
+from sklearn.linear_model import LinearRegression
+import datetime
+from plotly import express as px
+```
+
 The `coef` function uses linear regression to give an estimated yearly change in temperature.
 
 ```python
@@ -156,7 +165,7 @@ def coef(data_group):
     return LR.coef_[0]  #simple estimate of rate of change per year
 ```
 
-Now the function `temperature_coefficient_plot` queries the specified data and produces a geographic scatterplot. The location of each point is the location of the station and the color is based on the estimate of yearly change in temperature at the station in the given time interval.
+The function `temperature_coefficient_plot` queries the specified data and produces a geographic scatterplot. The location of each point is the location of the station and the color is based on the estimate of yearly change in temperature at the station in the given time interval.
 
 ```python
 def temperature_coefficient_plot(country, year_begin, year_end, month, min_obs, **kwargs):
@@ -206,6 +215,12 @@ fig.show()
 
 The geographic visualization above shows that temperature is changing across stations. The following visualization answers the question: How is the mean temperature per year changing in comparison to the overall mean temperature?
 
+The package `numpy` will be used to take averages of temperature data.
+
+```python
+import numpy as np
+```
+
 The function `diff_from_mean_temp` takes in the same arguments as the `query_climate_database`: country, year_begin, year_end, and month. With the returned dataframe, it takes the mean temperature over the entire time period and then finds the difference between the mean temperature of each year and the overall mean temperature. This data is displayed on an interactive barplot.
 
 ```python
@@ -244,7 +259,7 @@ fig.show()
 
 The following visualization answers the question: How does temperature vary across a country given the latitude of the station?
 
-The function `latitude_and_temp` takes in the same arguments as the `query_climate_database`, country, year_begin, year_end, and month. With the returned data frame, aggregates the data to calculate the mean temperature from each station in the given time interval. A scatterplot is created that compares the latitude of the station to its mean temperature reading in the time period.
+The function `latitude_and_temp` takes in the same arguments as the `query_climate_database`, country, year_begin, year_end, and month. With the returned dataframe, aggregates the data to calculate the mean temperature from each station in the given time interval. A scatterplot is created that compares the latitude of the station to its mean temperature reading in the time period.
 
 ```python
 def latitude_and_temp(country, year_begin, year_end, month):
