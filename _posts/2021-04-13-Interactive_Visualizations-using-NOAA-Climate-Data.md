@@ -181,7 +181,7 @@ def temperature_coefficient_plot(country, year_begin, year_end, month, min_obs, 
     coefs = coefs.rename(columns = {0 : "Estimated Yearly Change (C)"})
 
     #create the plot
-    title = "Estimates of Yearly Increase in Temperature in {a} for stations in {b}, years {c} - {d}"\
+    title = "Estimates of Yearly Increase in Temperature in {a} <br> for stations in {b}, years {c} - {d}"\
     .format(a=datetime.date(2021, month, 1).strftime('%B'), b=country, c=year_begin, d=year_end)
     fig = px.scatter_mapbox(coefs,
                             lat = "LATITUDE",
@@ -190,7 +190,6 @@ def temperature_coefficient_plot(country, year_begin, year_end, month, min_obs, 
                             color = "Estimated Yearly Change (C)",
                             title = title,
                             **kwargs)
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
     return fig
 ```
 
@@ -209,6 +208,7 @@ fig.show()
 ```
 
 {% include geo_scatter.html %}
+
 
 
 ### Barplot Showing the Difference in Mean Temperature per Year and Overall Mean Temperature
@@ -290,6 +290,6 @@ fig.show()
 
 {% include latitudetemp.html %}
 
-Notice here how the mean temperature appears to increase with latitude until latitude reaches -20. Then it slightly decreases.
+Notice here how the mean temperature appears to increase with latitude until latitude reaches -20. Then it begins to decrease.
 
-Thanks for reading my post about climate visualizations!
+Thanks for reading my post about interactive climate visualizations!
