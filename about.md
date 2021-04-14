@@ -4,12 +4,9 @@ title: About
 permalink: /about/
 ---
 
-Some information about you!
-
-### More Information
-
-A place to include any other types of information that you'd like to include about yourself.
+Hi! I'm Charisse Hung and I'm a second year studying applied math and statistics at UCLA. On this blog you'll see what cool things I've been making for my Python and Applications course.
 
 ### Contact me
 
-[email@domain.com](mailto:email@domain.com)
+Email:
+chung2000[at]g[dot]ucla[dot]edu
