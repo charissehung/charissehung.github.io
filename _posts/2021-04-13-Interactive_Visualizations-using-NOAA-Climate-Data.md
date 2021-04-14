@@ -3,11 +3,11 @@ layout: post
 title: Interactive Visualizations using NOAA Climate Data
 ---
 
-In this post I will be demonstrating the functions I wrote to query data from the NOAA and create interactive visualizations.
+In this post I will be demonstrating the functions I wrote to query climate data from the NOAA and create interactive visualizations.
 
 ## Create a Database
 
-To create a database from the NOAA climate data, I used sqlite3 to create the database and query data, and used pandas to manipulate dataframes.
+To create a database from the NOAA climate data, sqlite3 creates the database and queries data, and pandas to manipulates dataframes.
 
 ```python
 #import libraries
@@ -18,7 +18,7 @@ import pandas as pd
 conn = sqlite3.connect("temps.db")
 ```
 
-The temperature data had to be cleaned. The following function reorganizes the temperature data so that we can use it properly.
+The temperature data had to be cleaned. The following function `prepare_df` reorganizes the temperature data so that we can use it properly.
 
 ```python
 #clean temperature data
@@ -32,7 +32,7 @@ def prepare_df(df):
     return(df)
 ```
 
-The temperature data set contains many rows, so we will load the data into the data base in chunks. The following loop iterates through the 100000 rows of the data at a time, cleaning it with the `prepare_df` and adding it to the database.
+The temperature data set contains many rows, so the data is loaded into the database in chunks. The following loop iterates through the 100000 rows of the data at a time, cleaning it with the `prepare_df` and adding it to the database.
 
 ```python
 # load temperature data into database in chunks
@@ -68,13 +68,33 @@ for result in cursor.fetchall():
     print(result[0])
 ```
 
-PUT RESULTS HERE!!
+```
+CREATE TABLE "temperatures" (
+"ID" TEXT,
+  "Year" INTEGER,
+  "Month" INTEGER,
+  "Temp" REAL
+)
+CREATE TABLE "stations" (
+"ID" TEXT,
+  "LATITUDE" REAL,
+  "LONGITUDE" REAL,
+  "STNELEV" REAL,
+  "NAME" TEXT
+)
+CREATE TABLE "countries" (
+"FIPS" TEXT,
+  "ISO" TEXT,
+  "Country" TEXT
+)
+```
 
-This confirms that our data is properly loaded into the database! We will now close the connection to with the database.
+This confirms that the data is properly loaded into the database! The three tables are temperatures, stations, and countries, and we can see the row and column names for each table. Now close the connection to with the database.
 
 ```python
 conn.close()
 ```
+
 
 ## Write a Query functions
 
@@ -109,11 +129,13 @@ query_climate_database(country = "China",
                        month = 8)
 ```
 
-INCLUDE DATAFRAME
+![queryclimatedataframe]({{ site.baseurl }}/images/queryclimatedataframe.png)
+
 
 ## Creating Interactive Visualizations
 
 I have created 3 interactive visualizations that showcase different aspects of the NOAA climate data.
+
 
 ### Geographic Scatter Function for Yearly Temperature Increase
 
@@ -134,7 +156,7 @@ def coef(data_group):
     return LR.coef_[0]  #simple estimate of rate of change per year
 ```
 
-Now the function `temperature_coefficient_plot` write words here
+Now the function `temperature_coefficient_plot` queries the specified data and produces a geographic scatterplot. The location of each point is the location of the station and the color is based on the estimate of yearly change in temperature at the station in the given time interval.
 
 ```python
 def temperature_coefficient_plot(country, year_begin, year_end, month, min_obs, **kwargs):
@@ -179,11 +201,12 @@ fig.show()
 
 {% include geo_scatter.html %}
 
-### Barplot Showing the Difference in Mean Temperature per Year to the Overall Mean Temperature
+
+### Barplot Showing the Difference in Mean Temperature per Year and Overall Mean Temperature
 
 The geographic visualization above shows that temperature is changing across stations. The following visualization answers the question: How is the mean temperature per year changing in comparison to the overall mean temperature?
 
-The function `diff_from_mean_temp` takes in the same arguments as the `query_climate_database`, country, year_begin, year_end, and month. With the returned data frame, it takes the mean temperature over the entire time period and then finds the difference between the mean temperature of each year and the overall mean temperature. This data is plotted on a barplot.
+The function `diff_from_mean_temp` takes in the same arguments as the `query_climate_database`: country, year_begin, year_end, and month. With the returned dataframe, it takes the mean temperature over the entire time period and then finds the difference between the mean temperature of each year and the overall mean temperature. This data is displayed on an interactive barplot.
 
 ```python
 def diff_from_mean_temp(country, year_begin, year_end, month):
@@ -191,7 +214,6 @@ def diff_from_mean_temp(country, year_begin, year_end, month):
     Input a country, a bounded time interval, and a month
     Returns a barplot comparing the yearly temperature to the average temperature over the interval
     '''
-
     #obtain and clean the data
     df = query_climate_database(country, year_begin, year_end, month) #read in the data using previously defined function
     mean = np.mean(df["Temp"]) #overall mean temperature of the time interval
@@ -217,11 +239,12 @@ fig.show()
 
 {% include meantempbarplot.html %}
 
+
 ### Scatterplot for Mean Temperature and Latitude
 
-The following visualization answers the question: how does temperature vary across a country given the latitude of the station?
+The following visualization answers the question: How does temperature vary across a country given the latitude of the station?
 
-The function `latitude_and_temp` takes in the same arguments as the `query_climate_database`, country, year_begin, year_end, and month. With the returned data frame, aggregates the data to caluculate the mean temperature from each station in the given time interval. A scatterplot is created that compares the latitude of the station to its mean temperature reading in the time period.
+The function `latitude_and_temp` takes in the same arguments as the `query_climate_database`, country, year_begin, year_end, and month. With the returned data frame, aggregates the data to calculate the mean temperature from each station in the given time interval. A scatterplot is created that compares the latitude of the station to its mean temperature reading in the time period.
 
 ```python
 def latitude_and_temp(country, year_begin, year_end, month):
@@ -251,3 +274,7 @@ fig.show()
 ```
 
 {% include latitudetemp.html %}
+
+Notice here how the mean temperature appears to increase with latitude until latitude reaches -20. Then it slightly decreases.
+
+Thanks for reading my post about climate visualizations!
