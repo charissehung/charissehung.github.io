@@ -23,12 +23,12 @@ The temperature data had to be cleaned. The following function `prepare_df` reor
 ```python
 #clean temperature data
 def prepare_df(df):
-    df = df.set_index(keys=["ID", "Year"])
-    df = df.stack()
-    df = df.reset_index()
-    df = df.rename(columns = {"level_2"  : "Month" , 0 : "Temp"})
-    df["Month"] = df["Month"].str[5:].astype(int)
-    df["Temp"]  = df["Temp"] / 100
+    df = df.set_index(keys=["ID", "Year"]) #index the datafram by ID and Year
+    df = df.stack() #stack all the data values into a new column
+    df = df.reset_index() #reset index to ID and Year
+    df = df.rename(columns = {"level_2"  : "Month" , 0 : "Temp"}) #rename the new columns
+    df["Month"] = df["Month"].str[5:].astype(int) #extract the month number
+    df["Temp"]  = df["Temp"] / 100 #convert data to units of Celcius
     return(df)
 ```
 
@@ -89,7 +89,7 @@ CREATE TABLE "countries" (
 )
 ```
 
-This confirms that the data is properly loaded into the database! The three tables are temperatures, stations, and countries, and we can see the row and column names for each table. Now close the connection to with the database.
+This confirms that the data is properly loaded into the database! The three tables are temperatures, stations, and countries, and we can see the row and column names for each table. Now close the connection to the database.
 
 ```python
 conn.close()
@@ -134,7 +134,7 @@ query_climate_database(country = "China",
 
 ## Creating Interactive Visualizations
 
-I have created 3 interactive visualizations that showcase different aspects of the NOAA climate data.
+I have created three interactive visualizations that showcase different aspects of the NOAA climate data.
 
 
 ### Geographic Scatter Function for Yearly Temperature Increase
@@ -175,13 +175,15 @@ def temperature_coefficient_plot(country, year_begin, year_end, month, min_obs, 
     '''
     #obtain and clean the data
     df = query_climate_database(country, year_begin, year_end, month) #read in the data using previously defined function
+    counts = df.groupby(["NAME", "Month"])["Year"].transform(len)
+    df = df[counts >= min_obs]
     coefs = df.groupby(["NAME", "Month", "LATITUDE", "LONGITUDE"]).apply(coef) #find the estimated yearly change in temperature for each station
     coefs = coefs.round(3) # round data to 3 decimal places
     coefs = coefs.reset_index()
     coefs = coefs.rename(columns = {0 : "Estimated Yearly Change (C)"})
 
     #create the plot
-    title = "Estimates of Yearly Increase in Temperature in {a} <br> for stations in {b}, years {c} - {d}"\
+    title = "Estimates of Yearly Increase in Temperature in {a} for stations in {b}, years {c} - {d}"\
     .format(a=datetime.date(2021, month, 1).strftime('%B'), b=country, c=year_begin, d=year_end)
     fig = px.scatter_mapbox(coefs,
                             lat = "LATITUDE",
@@ -209,7 +211,7 @@ fig.show()
 
 {% include geo_scatter.html %}
 
-
+We can see here that redder points are stations where the estimated yearly temperature is increasing and blacker points are stations where the estimated yearly temperature is decreasing. Now we have a visual that shows how the average yearly temperature varies across a country.
 
 ### Barplot Showing the Difference in Mean Temperature per Year and Overall Mean Temperature
 
@@ -224,24 +226,27 @@ import numpy as np
 The function `diff_from_mean_temp` takes in the same arguments as the `query_climate_database`: country, year_begin, year_end, and month. With the returned dataframe, it takes the mean temperature over the entire time period and then finds the difference between the mean temperature of each year and the overall mean temperature. This data is displayed on an interactive barplot.
 
 ```python
-def diff_from_mean_temp(country, year_begin, year_end, month):
+def diff_from_mean_temp(country, year_begin, year_end, month, **kwargs):
     '''
     Input a country, a bounded time interval, and a month
     Returns a barplot comparing the yearly temperature to the average temperature over the interval
     '''
+
     #obtain and clean the data
     df = query_climate_database(country, year_begin, year_end, month) #read in the data using previously defined function
     mean = np.mean(df["Temp"]) #overall mean temperature of the time interval
     df = df.groupby(["Year"])["Temp"].aggregate(np.mean) #find mean temperature per year
     df = df.reset_index()
     df["Difference (C)"] = df["Temp"] - mean #compare mean temperature of year to mean temperature over entire time interval
+    df= df.round(3) #round to 3 decimal places
     df["col"] = np.where(df["Difference (C)"]>=0, 'red', 'blue')
 
     #create the plot
     title = "Difference in Mean Temperature in {a} for stations in {b} from {c} to {d}"\
     .format(a=datetime.date(2021, month, 1).strftime('%B'), b=country, c=year_begin, d=year_end)
     fig = px.bar(df, x = "Year", y = "Difference (C)",
-                hover_data = ["Year", "Difference (C)"], title = title)
+                hover_data = ["Year", "Difference (C)"], title = title, color = "col", **kwargs)
+    fig.update_layout(showlegend=False) #hide the legend
     return fig
 ```
 
@@ -254,42 +259,48 @@ fig.show()
 
 {% include meantempbarplot.html %}
 
+Here we can see the positive red bars indicate that the temperature readings that year were above the mean, and negative blue bars indicate that temperature readings that year were below the mean.
 
-### Scatterplot for Mean Temperature and Latitude
 
-The following visualization answers the question: How does temperature vary across a country given the latitude of the station?
+### Scatterplot for Variantion in Temperature and Latitude
 
-The function `latitude_and_temp` takes in the same arguments as the `query_climate_database`, country, year_begin, year_end, and month. With the returned dataframe, aggregates the data to calculate the mean temperature from each station in the given time interval. A scatterplot is created that compares the latitude of the station to its mean temperature reading in the time period.
+The following visualization answers the question: How does the variation in temperature vhange across a country given the latitude of the station?
+
+The function `latitude_and_vartemp` takes in the same arguments as the `query_climate_database`, country, year_begin, year_end, and month. It also takes an argument min_obs that specified the minimum observations from a station for its data to be included. With the returned dataframe, the function aggregates the data to calculate the variance in temperature from each station in the given time interval. A scatterplot is created that compares the latitude of the station to the variance of temperature readings in the time period.
 
 ```python
-def latitude_and_temp(country, year_begin, year_end, month):
+def latitude_and_vartemp(country, year_begin, year_end, month, min_obs, **kwargs):
     '''
     Input a country, a bounded time interval, and a month
-    Returns a scatterplot comparing the latitude of a station and its mean temperature reading over the time interval
+    Returns a scatterplot comparing the latitude of a station and the variance in temperature reading over the time interval
     '''
     df = query_climate_database(country, year_begin, year_end, month) #read in the data using previously defined function
-    df = df.groupby(["NAME", "LATITUDE", "LONGITUDE"])["Temp"].apply(np.mean) #calculate mean temp at station over time interval
+    counts = df.groupby(["NAME", "Month"])["Year"].transform(len)
+    df = df[counts >= min_obs] #only include data with at least min_obs observations
+    df = df.groupby(["NAME", "LATITUDE", "LONGITUDE"])["Temp"].apply(np.var) #calculate mean temp at station over time interval
+    df= df.round(3) #round to 3 decimal places
     df = df.reset_index()
-    df = df.rename(columns = {"Temp" : "Mean Temp (C)"}) #rename mean temperature column
+    df = df.rename(columns = {"Temp" : "Variation in Temp (C)"}) #rename variation in temperature column
 
     #create the plot
-    title = "Latitude and Mean Temperature Readings in {a} for stations in {b} from {c} to {d}"\
+    title = "Latitude and Variation in Temperature Readings in {a} for stations in {b} from {c} to {d}"\
     .format(a=datetime.date(2021, month, 1).strftime('%B'), b=country, c=year_begin, d=year_end)
-    fig = px.scatter(df, x="LATITUDE", y="Mean Temp (C)", hover_name = "NAME", color = "Mean Temp (C)", title = title)
+    fig = px.scatter(df, x="LATITUDE", y="Variation in Temp (C)", hover_name = "NAME", color = "Variation in Temp (C)", title = title, **kwargs)
     return fig
 ```
-Here is an example of using `latitude_and_temp` to visualize the mean temperature reading across stations of various latitudes in Australia in December from 1970 to 2000.
+Here is an example of using `latitude_and_temp` to visualize the variation in temperature readings across stations of various latitudes in Australia in December from 1970 to 2000.
 
 ```python
-fig = latitude_and_temp(country = "Australia",
+fig = latitude_and_vartemp(country = "Australia",
                         year_begin = 1970,
                         year_end = 2000,
-                        month = 12)
+                        month = 12,
+                        min_obs = 10)
 fig.show()
 ```
 
-{% include latitudetemp.html %}
+{% include latitudevartemp.html %}
 
-Notice here how the mean temperature appears to increase with latitude until latitude reaches -20. Then it begins to decrease.
+Notice here how the variance in temperature appears to be the greatest around latitude -35. It would be interesting to explore what factors in these areas lead to an increased variation in temperature readings such as environmental conditions, distance to the ocean, whether the area is urban or rural, etc.
 
 Thanks for reading my post about interactive climate visualizations!
