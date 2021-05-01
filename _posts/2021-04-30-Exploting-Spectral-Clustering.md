@@ -24,7 +24,7 @@ X, y = datasets.make_blobs(n_samples=n, shuffle=True, random_state=None, centers
 plt.scatter(X[:,0], X[:,1])
 ```
 
-IMAGE HERE
+![plot1]({{ site.baseurl }}/images/plot1.png)
 
 Here we can see two natural "blobs" of points. K-means clustering groups points from their average distance to the center of each circular cluster. We can see that K-means is very effective in this case and thus spectral clustering is not needed.
 
@@ -36,7 +36,7 @@ km.fit(X)
 plt.scatter(X[:,0], X[:,1], c = km.predict(X))
 ```
 
-IMAGE Here
+![plot2]({{ site.baseurl }}/images/plot2.png)
 
 Now here is another example of data points in two intuitive clusters.
 
@@ -47,7 +47,7 @@ X, y = datasets.make_moons(n_samples=n, shuffle=True, noise=0.05, random_state=N
 plt.scatter(X[:,0], X[:,1])
 ```
 
-IMAGE HERE
+![plot3]({{ site.baseurl }}/images/plot3.png)
 
 Below, we can see that K-means is not as effective at differentiating the two clusters.
 
@@ -57,7 +57,7 @@ km.fit(X)
 plt.scatter(X[:,0], X[:,1], c = km.predict(X))
 ```
 
-IMAGE Here
+![plot4]({{ site.baseurl }}/images/plot4.png)
 
 Using spectral clustering we will be able to correctly identify the two crescents.
 
@@ -272,7 +272,7 @@ plt.scatter(X[:,0][z_ < bnd], X[:,1][z_ < bnd], c = 'purple')
 plt.scatter(X[:,0][z_ >= bnd], X[:,1][z_ >= bnd], c = 'yellow')
 ```
 
-IMAGE Here
+![plot5]({{ site.baseurl }}/images/plot5.png)
 
 Wow! For the most part, it looks like our data has been clustered correcly.
 
@@ -289,7 +289,7 @@ plt.scatter(X[:,0][z_eig  < 0], X[:,1][z_eig  < 0], c = 'purple')
 plt.scatter(X[:,0][z_eig  >= 0], X[:,1][z_eig  >= 0], c = 'yellow')
 ```
 
-IMAGE Here
+![plot6]({{ site.baseurl }}/images/plot6.png)
 
 And again we have the crescents clustered! The linear algebra solution is more efficient than the explicit optimization from part D. This is where the name *spectral clustering* comes from since it uses the eigenvalues and eigenvectors of A.
 
@@ -341,7 +341,7 @@ X, y = datasets.make_moons(n_samples=n, shuffle=True, noise=0.05, random_state=N
 plt.scatter(X[:,0], X[:,1])
 ```
 
-IMAGE Here
+![plot7]({{ site.baseurl }}/images/plot7.png)
 
 ```python
 test1 = spectral_clustering(X, 0.4)
@@ -349,7 +349,7 @@ plt.scatter(X[:,0][test1 == 1], X[:,1][test1 == 1], c = 'purple')
 plt.scatter(X[:,0][test1 == 0], X[:,1][test1 == 0], c = 'yellow')
 ```
 
-IMAGE Here
+![plot8]({{ site.baseurl }}/images/plot8.png)
 
 Here's an example with more noise.
 
@@ -359,7 +359,7 @@ X, y = datasets.make_moons(n_samples=n, shuffle=True, noise=0.1, random_state=No
 plt.scatter(X[:,0], X[:,1])
 ```
 
-IMAGE HERE
+![plot9]({{ site.baseurl }}/images/plot9.png)
 
 To compensate for the extra noise, I decreased the epsilon value.
 
@@ -369,7 +369,7 @@ plt.scatter(X[:,0][test2 == 1], X[:,1][test2 == 1], c = 'purple')
 plt.scatter(X[:,0][test2 == 0], X[:,1][test2 == 0], c = 'yellow')
 ```
 
-IMAGE Here
+![plot10]({{ site.baseurl }}/images/plot10.png)
 
 As you can see, our spectral clustering function is able to separate the two crescents!
 
@@ -383,7 +383,7 @@ X, y = datasets.make_circles(n_samples=n, shuffle=True, noise=0.05, random_state
 plt.scatter(X[:,0], X[:,1]
 ```
 
-IMAGE HERE
+![plot11]({{ site.baseurl }}/images/plot11.png)
 
 Again, k-means clustering is not effective here.
 
@@ -393,7 +393,7 @@ km.fit(X)
 plt.scatter(X[:,0], X[:,1], c = km.predict(X))
 ```
 
-IMAGE Here
+![plot12]({{ site.baseurl }}/images/plot12.png)
 
 ```python
 bull = spectral_clustering(X, 0.50)
@@ -401,7 +401,7 @@ plt.scatter(X[:,0][bull == 1], X[:,1][bull == 1], c = 'purple')
 plt.scatter(X[:,0][bull == 0], X[:,1][bull == 0], c = 'yellow')
 ```
 
-IMAGE Here
+![plot13]({{ site.baseurl }}/images/plot13.png)
 
 Great! Our spectral clustering function was able to separate the two concentric circles. It appears that epsilon values between 0.32 and 0.54 can distinguish the two circles.
 
