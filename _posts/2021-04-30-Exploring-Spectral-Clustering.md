@@ -63,7 +63,9 @@ Using spectral clustering we will be able to correctly identify the two crescent
 
 ## Part A: The Similarity Matrix
 
-We will begin by creating the similarity matrix **A**. Given n data points, **A** i a nxn matrix of 0s and 1s and is reliant on a parameter `epsilon`. The ith, jth entry of **A** is 1 if the distance between the ith and jth data points are within `epsilon` of each other. Thus an entry of 0 would indicate that the ith and jth data points are greater than `epsilon` apart. Furthermore, the diagonal entries will all be 0.
+We will begin by creating the similarity matrix **A**. Given n data points, **A** is a nxn matrix of 0s and 1s and is reliant on a parameter `epsilon`. The ith, jth entry of **A** is 1 if the distance between the ith and jth data points are within `epsilon` of each other. Thus an entry of 0 would indicate that the ith and jth data points are greater than `epsilon` apart. Furthermore, the diagonal entries will all be 0.
+
+We will use the function `euclidean_distances` from sklearn here. This function computes the distances between the all the points and returns them in a matrix. Then we compare these distances to `epsilon` to create the similarity matrix.
 
 ```python
 from sklearn.metrics.pairwise import euclidean_distances
@@ -95,7 +97,7 @@ np.all(A.T==A) #check that A is symmetric
 True
 ```
 
-We can see that the similarity matrix is symmetric. This means A[i, j] equals A[j, i] for all i, j. This is expected because the distance between the ith and jth points is equal to the distrance between the jth and ith points.
+We can see that the similarity matrix is symmetric. This means A[i, j] equals A[j, i] for all i, j. This is expected because the distance between the ith and jth points is equal to the distance between the jth and ith points.
 
 ## Part B: The Binary Norm Cut Objective
 
@@ -106,25 +108,21 @@ $$N_{\mathbf{A}}(C_0, C_1)\equiv \mathbf{cut}(C_0, C_1)\left(\frac{1}{\mathbf{vo
 This is an intense formula but we will break it down.
 
 - $$C_0$$ and $$C_1$$ represent the two clusters of data points.
-- $$\mathbf{cut}(C_0, C_1) \equiv \sum_{i \in C_0, j \in C_1} a_{ij}$$ is the cut of the clusters $$C_0$$ and $$C_1$$.
-- $$\mathbf{vol}(C_0) \equiv \sum_{i \in C_0}d_i$$, where $$d_i = \sum_{j = 1}^n a_{ij}$$ is the degree of row $$i$$ (the total number of all other rows related to row $$i$$ through $$A$$). The volume of cluster $$C_0$$ is a measure of the size of the cluster.
+- cut term: $$\mathbf{cut}(C_0, C_1) \equiv \sum_{i \in C_0, j \in C_1} a_{ij}$$
+- volume term: $$\mathbf{vol}(C_0) \equiv \sum_{i \in C_0}d_i$$, where $$d_i = \sum_{j = 1}^n a_{ij}$$
 
-We want to minimize $$N_{\mathbf{A}}(C_0, C_1)$$ because this will indicate that the clustering is a good partition.
+We want to minimize $$N_{\mathbf{A}}(C_0, C_1)$$ because this will indicate that the clustering is a good partition of the points.
 
 ### The Cut Term
 
-The cut term is the number of nonzero entries in **A** that relate points in cluster $$C_0$$ to points in cluster $$C_1$$. We want this term to be small because we don't want points in $$C_0$$ to be close to points in $$C_1$$.
-
-We calculate the cut by summing the entries `A[i, j]` where i and j are in different clusters.
+Recall the $$C_0$$ and $$C_1$$ represent the two clusters of points. The cut term is the number points in different clusters (one in $$C_0$$ and the other in $$C_1$$) that are within a distance `epsilon` of each other. This means that the corresponding entry in **A** will be 1. We want the cut term to be small because we don't want points in $$C_0$$ to be close to points in $$C_1$$. We calculate the cut by summing the entries `A[i, j]` where i and j are in different clusters.
 
 ```python
 def cut(A, y):
     cut = 0
-    for i in range(n):
-        for j in range(n):
-            if y[i] == y[j]: # ignore when points are in different clusters
-                continue
-            else: # points in different clusters
+    for i in range(len(y)):
+        for j in range(len(y)):
+            if y[i] != y[j]: # points in different clusters
                 cut += A[i,j] # add to cut term
     return cut
 ```
@@ -142,7 +140,7 @@ print(cut(A, y))
 Without any scale, it is hard to know whether 26 is a large or small cut size. Let's create a random binary vector to replace y and see what the cut term is.
 
 ```python
-rand = np.random.randint(low = 0, high = 2, size = 200)
+rand = np.random.randint(2, size = 200) # random vector with 200 entries of 0s or 1s
 print(cut(A, rand))
 ```
 
@@ -150,12 +148,12 @@ print(cut(A, rand))
 2300.0
 ```
 
-As we can see, our cut term for the data is signifiantly smaller than the cut term when the points are randomly labelled.
+As we can see, our cut term for the data is significantly smaller than the cut term when the points are randomly labelled.
 
 
 ### The Volume Term
 
-The volume of a cluster measures how large the cluster is. In the binary norm cut objective equation, the volume terms are in the denomiator. Since we want $$\frac{1}{\mathbf{vol}(C_0)} + \frac{1}{\mathbf{vol}(C_1)}$$ to be small, we don't want $$C_0$$ or $$C_1$$ to be too small. Below is the function that returns the volume of each cluster as a tuple.
+The volume of a cluster measures how large the cluster is. In the binary norm cut objective equation, the volume terms are in the denominator. Since we want $$\frac{1}{\mathbf{vol}(C_0)} + \frac{1}{\mathbf{vol}(C_1)}$$ to be small, we don't want $$C_0$$ or $$C_1$$ to be too small. Below is the function that returns the volume of each cluster as a tuple.
 
 ```python
 def vols(A, y):
@@ -164,7 +162,7 @@ def vols(A, y):
 
 ### Creating the Binary Normalized Cut Objective
 
-Now that we have created functions for the cut and volume terms, we can but these together to caluculate the binary normalized cut objective of matrix **A** with clustering vector y.
+Now that we have created functions for the cut and volume terms, we can but these together to calculate the binary normalized cut objective of matrix **A** with clustering vector y.
 
 ```python
 def normcut(A, y):
@@ -184,11 +182,11 @@ print(normcut(A, rand))
 2.0480047195518316
 ```
 
-As we can see, the correct binary normalized cut objective is almost 100 times smaller than the randomly created one. This confirms that our binary normalized cut objective is small.
+As we can see, the correct binary normalized cut objective is almost 100 times smaller than the randomly created one. This confirms that our binary normalized cut objective is small, as desired.
 
 ## Part C: A Math Trick
 
-We just found a way to calculate the binary normalized cut objective of **A**, however this is computationally intensive. When calculating the cut term, we used a double for loop, and this is very slow. Instead here is another way to define the binary normalized cut objective.
+We just found a way to calculate the binary normalized cut objective of **A**, however this is computationally intensive. When calculating the cut term, we used a nested for loop, and this is very slow. Instead here is another way to define the binary normalized cut objective.
 
 Let `z` be a new vector such that:
 
@@ -200,7 +198,7 @@ z_i =
 \end{cases}
 $$
 
-Let **D** be a diagonal matrix with nonzero entries $$d_{ii} = d_i$$, and where $$d_i = \sum_{j = 1}^n a_i$$ is the degree (row-sum) from before.  
+**D** is a diagonal matrix with nonzero entries $$d_{ii} = d_i$$, and where $$d_i = \sum_{j = 1}^n a_i$$ is the degree (row-sum) from before.  
 
 We can rewrite the binary normalized cut objective as:
 
@@ -218,7 +216,7 @@ def transform(A, y):
     z[y == 1] = -1 / v1
     return z
 ```
-Now, let's check if the new binary normalized cut objective has is equal to the one we calucluated previously in part B.
+Now, let's check if the new binary normalized cut objective is equal to the one we calculated in part B.
 
 ```python
 z = transform(A, y)
@@ -234,13 +232,33 @@ True
 ```
 We can see that the new formula for the binary normalized cut objective produces a value extremely close to the original one we calculated. In fact, the difference is so small that it is less than the error that the computer has in calculating them.
 
+{::options parse_block_html="true" /}
+<div class="gave-help">
+I gave a suggestion to a classmate about how to efficiently construct the D matrix. I explained that np.diag allows us to create a diagonal matrix which would allow them to construct D in one line of code.
+</div>
+{::options parse_block_html="false" /}
+
+Let's also check if $$\mathbf{z}^T\mathbf{D}\mathbb{1} = 0$$. This will check if z is constructed correctly.
+
+```python
+print(np.transpose(z)@D@np.ones(200))
+print(np.isclose(np.transpose(z)@D@np.ones(200), 0))
+```
+
+```python
+-2.7755575615628914e-17
+True
+```
+
+As we can see, $$\mathbf{z}^T\mathbf{D}\mathbb{1}$$ is an extremely small value. The difference between it and 0 is less than the error a computer has in calculating it. Thus we have verified the identity and z has been constructed correctly.
+
 ## Part D: Minimizing the Function
 
 We have just found a new formula for the binary normalized cut objective. We will label this $$R_A(z)$$ for clarity.
 
 $$ R_\mathbf{A}(\mathbf{z})\equiv \frac{\mathbf{z}^T (\mathbf{D} - \mathbf{A})\mathbf{z}}{\mathbf{z}^T\mathbf{D}\mathbf{z}} $$
 
-Thus, minimizing the binary normalized cut objective is equivalent to minimizing $$R_A(z)$$. We will do this by minimizing the difference between `z` and its orthogonal component.
+Thus, minimizing the binary normalized cut objective is equivalent to minimizing $$R_A(z)$$. We will minimize $$R_A(z)$$ by minimizing the difference between `z` and its orthogonal component.
 
 ```python
 def orth(u, v):
@@ -274,7 +292,7 @@ plt.scatter(X[:,0][z_ >= bnd], X[:,1][z_ >= bnd], c = 'yellow')
 
 ![plot5]({{ site.baseurl }}/images/plot5.png)
 
-Wow! For the most part, it looks like our data has been clustered correcly.
+Wow! For the most part, it looks like our data has been clustered correctly.
 
 ## Part F: A Linear Algebra Solution
 
@@ -305,7 +323,7 @@ def spectral_clustering(X, epsilon):
     epsilon: a small value which defines the cutoff for points being close together
 
     Returns:
-    B: A binary vector labelling which cluster each respective point belongs to
+    A binary vector labelling which cluster each respective point belongs to
     """
 
     # Construct the similarity matrix A
@@ -314,18 +332,15 @@ def spectral_clustering(X, epsilon):
     A[A != 1] = 0
     np.fill_diagonal(A, 0)
 
-    #Construct the Laplacian matrix
+    # Construct the Laplacian matrix
     D = np.diag(sum(A))
     L = np.linalg.inv(D)@(D-A)
 
-    #compute eigenvector with second smallest eigenvalue of L
+    # Compute eigenvector with second smallest eigenvalue of L
     z_eig = np.linalg.eig(L)[1][:,1]
 
-    #return labels based on eigenvector
-    B = np.zeros(X.shape[0])
-    B[z_eig > 0] = 1
-
-    return B
+    # Return labels based on eigenvector
+    return 1 * (z_eig > 0)  
 ```
 
 ## Part H: Experimenting with Crescents
@@ -345,11 +360,27 @@ plt.scatter(X[:,0], X[:,1])
 
 ```python
 test1 = spectral_clustering(X, 0.4)
+plt.scatter(X[:,0], X[:,1], c = test1)
+```
+
+![plot8]({{ site.baseurl }}/images/plot8.png)
+
+{::options parse_block_html="true" /}
+<div class="got-help">
+Initially, I was overlaying two scatterplots to demonstrate my clustering function:
+
+```python
 plt.scatter(X[:,0][test1 == 1], X[:,1][test1 == 1], c = 'purple')
 plt.scatter(X[:,0][test1 == 0], X[:,1][test1 == 0], c = 'yellow')
 ```
 
-![plot8]({{ site.baseurl }}/images/plot8.png)
+A classmate suggested that I use the labels generated from my clustering function as the color argument for the scatterplot. Throughout Part H you can see that I've used this suggestion, and now I only call the scatter function once to demonstrate my spectral clustering function.
+
+```python
+plt.scatter(X[:,0], X[:,1], c = test1)
+```
+</div>
+{::options parse_block_html="false" /}
 
 Here's an example with more noise.
 
@@ -365,8 +396,7 @@ To compensate for the extra noise, I decreased the epsilon value.
 
 ```python
 test2 = spectral_clustering(X, 0.3)
-plt.scatter(X[:,0][test2 == 1], X[:,1][test2 == 1], c = 'purple')
-plt.scatter(X[:,0][test2 == 0], X[:,1][test2 == 0], c = 'yellow')
+plt.scatter(X[:,0], X[:,1], c = test2)
 ```
 
 ![plot10]({{ site.baseurl }}/images/plot10.png)
@@ -380,12 +410,12 @@ What if we have a different data set? Let's try a bull's eye.
 ```python
 n = 1000
 X, y = datasets.make_circles(n_samples=n, shuffle=True, noise=0.05, random_state=None, factor = 0.4)
-plt.scatter(X[:,0], X[:,1]
+plt.scatter(X[:,0], X[:,1])
 ```
 
 ![plot11]({{ site.baseurl }}/images/plot11.png)
 
-Again, k-means clustering is not effective here.
+Will k-means clustering work?
 
 ```python
 km = KMeans(n_clusters = 2)
@@ -395,14 +425,44 @@ plt.scatter(X[:,0], X[:,1], c = km.predict(X))
 
 ![plot12]({{ site.baseurl }}/images/plot12.png)
 
+Again, k-means clustering is not effective here.
+
+Let's try our spectral clustering function!
+
 ```python
-bull = spectral_clustering(X, 0.50)
-plt.scatter(X[:,0][bull == 1], X[:,1][bull == 1], c = 'purple')
-plt.scatter(X[:,0][bull == 0], X[:,1][bull == 0], c = 'yellow')
+bull = spectral_clustering(X, 0.3)
+plt.scatter(X[:,0], X[:,1], c = bull)
 ```
 
 ![plot13]({{ site.baseurl }}/images/plot13.png)
 
-Great! Our spectral clustering function was able to separate the two concentric circles. It appears that epsilon values between 0.32 and 0.54 can distinguish the two circles.
+Hmmm this didn't seem to work. Let's try increasing the value of epsilon to 0.4.
 
-Thanks for reading my post about simple spectral clustering. I hope you learned something new today!
+```python
+bull = spectral_clustering(X, 0.4)
+plt.scatter(X[:,0], X[:,1], c = bull)
+```
+
+![plot14]({{ site.baseurl }}/images/plot14.png)
+
+Great! Our spectral clustering function was able to separate the two concentric circles. Let's see what other values of epsilon can separate the circles.
+
+```python
+bull = spectral_clustering(X, 0.5)
+plt.scatter(X[:,0], X[:,1], c = bull)
+```
+
+![plot15]({{ site.baseurl }}/images/plot15.png)
+
+An epsilon value of 0.5 also separates the circles!
+
+```python
+bull = spectral_clustering(X, 0.6)
+plt.scatter(X[:,0], X[:,1], c = bull)
+```
+
+![plot16]({{ site.baseurl }}/images/plot16.png)
+
+Look's like an epsilon value of 0.6 is not able to separate the circles. Thus, epsilon values between 0.4 and 0.5 can distinguish the two circles.
+
+Thanks for reading my post about spectral clustering. I hope you learned something new today!
