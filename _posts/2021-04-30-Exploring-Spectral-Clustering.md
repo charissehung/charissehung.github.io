@@ -26,7 +26,7 @@ plt.scatter(X[:,0], X[:,1])
 
 ![plot1]({{ site.baseurl }}/images/plot1.png)
 
-Here we can see two natural "blobs" of points. K-means clustering groups points from their average distance to the center of each circular cluster. We can see that K-means is very effective in this case and thus spectral clustering is not needed.
+Here we can see two natural "blobs" of points. K-means clustering groups points from their average distance to the center of each circular cluster. We can see that K-means is very effective in separating the two blobs and thus spectral clustering is not needed.
 
 ```python
 from sklearn.cluster import KMeans
@@ -49,7 +49,7 @@ plt.scatter(X[:,0], X[:,1])
 
 ![plot3]({{ site.baseurl }}/images/plot3.png)
 
-Below, we can see that K-means is not as effective at differentiating the two clusters.
+Below, we can see that K-means is not as effective at differentiating the two crescents.
 
 ```python
 km = KMeans(n_clusters = 2)
@@ -90,7 +90,7 @@ array([[0., 0., 0., ..., 0., 0., 0.],
 We can see that the output is an array of 0s and 1s with 0s on the diagonal. As a sanity check, let's see if **A** is symmetric.
 
 ```python
-np.all(A.T==A) #check that A is symmetric
+np.all(A.T==A) # check that A is symmetric
 ```
 
 ```python
@@ -358,12 +358,16 @@ plt.scatter(X[:,0], X[:,1])
 
 ![plot7]({{ site.baseurl }}/images/plot7.png)
 
+Let's try out our new spectral clustering function and see if it can separate the crescents.
+
 ```python
 test1 = spectral_clustering(X, 0.4)
 plt.scatter(X[:,0], X[:,1], c = test1)
 ```
 
 ![plot8]({{ site.baseurl }}/images/plot8.png)
+
+Our spectral clustering function was able to separate the two clusters!
 
 {::options parse_block_html="true" /}
 <div class="got-help">
