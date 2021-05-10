@@ -9,11 +9,13 @@ In this post I will be guiding you through the process of creating a simple spec
 
 First, let's import the necessary libraries.
 
+
 ```python
 import numpy as np
 from sklearn import datasets
 from matplotlib import pyplot as plt
 ```
+
 
 To motivate spectral clustering, we must understand when we can use it, and when we do not need to. Here is an example of a set of points.
 
@@ -300,8 +302,27 @@ The optimization we did in part D was effective, however it was very slow. Inste
 
 ```python
 L = np.linalg.inv(D)@(D-A) # create the Laplacian matrix
-z_eig = np.linalg.eig(L)[1][:,1] # extract eigenvector corresponding to second smallest eigenvalue
+eig_vals, eig_vecs = np.linalg.eig(L) # compute eigenvalues and eigenvectors of Laplacian matrix
+idx = np.argsort(eig_vals) # find indexes eigenvalues sorted in ascending order
+eig_vals, eig_vecs = eig_vals[idx], eig_vecs[:,idx] # sort eigenvalues and eigenvectors by ascending order of eigenvalues
+z_eig = eig_vecs[:,1] # obtain eigenvector corresponding to second smallest eigenvalue
+```
 
+{::options parse_block_html="true" /}
+<div class="got-help">
+Initially, I was assuming that the eigenvalues were already sorted in ascending order. So I used indexing to obtain what I thought was the eigenvector corresponding the second smallest eigenvalue.
+
+```python
+z_eig = np.linalg.eig(L)[1][:,1]
+```
+
+Through a classmate's review, I learned that this is not guaranteed. They suggested I manually sort the eigenvalues to obtain the eigenvector corresponding to the second smallest eigenvalue. So above and in the `spectral_clustering` function in Part G, I have updated my code to manually sort the eigenvalues.
+
+</div>
+{::options parse_block_html="false" /}
+
+
+```python
 # color the points based on the sign of z_eig
 plt.scatter(X[:,0][z_eig  < 0], X[:,1][z_eig  < 0], c = 'purple')
 plt.scatter(X[:,0][z_eig  >= 0], X[:,1][z_eig  >= 0], c = 'yellow')
@@ -337,11 +358,20 @@ def spectral_clustering(X, epsilon):
     L = np.linalg.inv(D)@(D-A)
 
     # Compute eigenvector with second smallest eigenvalue of L
-    z_eig = np.linalg.eig(L)[1][:,1]
+    eig_vals, eig_vecs = np.linalg.eig(L)
+    idx = np.argsort(eig_vals)
+    eig_vals, eig_vecs = eig_vals[idx], eig_vecs[:,idx]
+    z_eig = eig_vecs[:,1]
 
     # Return labels based on eigenvector
     return 1 * (z_eig > 0)  
 ```
+
+{::options parse_block_html="true" /}
+<div class="gave-help">
+I gave a reminder to a classmate about how to find the eigenvalues and eigenvectors of the Laplacian matrix **L**. Initially, they were finding the spectral decomposition of (L+L.T)/2. Since **L** is a nonsingular square matrix, its eigenvalues and eigenvectors can be directly computed.
+</div>
+{::options parse_block_html="false" /}
 
 ## Part H: Experimenting with Crescents
 
