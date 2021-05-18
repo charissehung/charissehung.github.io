@@ -225,7 +225,7 @@ This may seem confusing, so we can look at a diagram that represents the layers 
 keras.utils.plot_model(model_title)
 ```
 
-INSEST MODEL DIAGRAM HERE
+![blog3model1]({{ site.baseurl }}/images/blog3model1.png)
 
 We can see how the title is vectorized, passed through the embedding layer, and then continues through multiple layers until the end when it outputs `fake`.
 
@@ -300,7 +300,7 @@ plt.gca().set(xlabel = "epoch", ylabel = "accuracy")
 plt.legend()
 ```
 
-INSERT GRAPH Here
+![blog3plot1]({{ site.baseurl }}/images/blog3plot1.png)
 
 We can see that the training and validation data appear to have similar accuracy, which indicates we did not overfit the model. Additionally, the accuracies of both have "leveled off" so we probably would not benefit from more training. Our first model is complete!
 
@@ -371,7 +371,7 @@ Let's also look at the diagram to better understand the structure of the model.
 keras.utils.plot_model(model_text)
 ```
 
-INSERT MODEL DIAGRAM HERE
+![blog3model2]({{ site.baseurl }}/images/blog3model2.png)
 
 This diagram is very similar to the one for `model_title` since both have the same structure.
 
@@ -445,7 +445,7 @@ plt.gca().set(xlabel = "epoch", ylabel = "accuracy")
 plt.legend()
 ```
 
-INSERT SECOND GRAPH Here
+![blog3plot2]({{ site.baseurl }}/images/blog3plot2.png)
 
 We can see that the validation data has a slightly higher accuracy than the training data, so we did not overfit the model. Both lines have "leveled off" so we are done training this model!
 
@@ -524,7 +524,7 @@ There is a lot goin on here. Notice that unlike the previous two models, there i
 keras.utils.plot_model(model)
 ```
 
-INSERT MODEL structure
+![blog3model3]({{ site.baseurl }}/images/blog3model3.png)
 
 Notice how both the text and title go through the same embedding layer. Recall, we defined our own embedding layer and then had both the title and text use it. Another cool thing to note is how the two "branches" of layers come together at the concatenate layer. We explicitly did this when we created `main`. Let's compile our model and train it.
 
@@ -593,7 +593,7 @@ plt.gca().set(xlabel = "epoch", ylabel = "accuracy")
 plt.legend()
 ```
 
-INSET GRAPH HERE
+![blog3plot3]({{ site.baseurl }}/images/blog3plot3.png)
 
 We can see that the validation and training data reaches a similar level so we did not overfit the data. Additionally the accuracies have leveled off, so we are done training!
 
@@ -659,7 +659,7 @@ fig = px.scatter(embedding_df,
 fig.show()
 ```
 
-PLOTLY FIGURE HERE
+{% include word_embedding.html %}
 
 On the far left we can see words such as "breaking", "video", and "watch" which remind me of clickbait. Other notable word on the left are "KKK", "21wire" (a conspiracy new site), and "tucker" (maybe Tucker Carlson). It is clear that words on the left side are those that the model associates with fake news. On the right there are many country names such as "myanmar", "russia", and "chinas". It seems that international news is less likely to be fake.
 
