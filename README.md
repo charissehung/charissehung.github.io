@@ -1,3 +1,3 @@
-# PIC16B Demonstration Website
+## Welcome!
 
-This repository hosts a demonstration website for use of students in PIC16B, a course in computational science with Python taught at UCLA. It is lightly modified from Barry Clark's excellent [Jekyll Now](https://www.jekyllnow.com/). 
+Check out [my blog](https://charissehung.github.io/) to see what I've been learning in my Python and Applications course at UCLA!
