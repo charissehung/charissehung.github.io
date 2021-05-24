@@ -5,7 +5,18 @@ title: Identifying Fake News with TensorFlow
 
 In this post, I'll explain how to create a fake news classifier using TensorFlow. We will be creating three models to predict whether news articles contain fake news, and then evaluate them.
 
-First, let us download the necessary packages. As we can see, we will need many functionalities of TensorFlow.
+There are quite a few steps, so here is the process we will follow.
+
+1. Acquire Training Data
+2. Create a Dataset
+3. Preprocessing
+4. Creating the Title Model
+5. Creating the Text Model
+6. Creating the Combined Model
+7. Testing Out the Model
+8. Visualizing
+
+Before we get into it, let's download the necessary packages. As we can see, we will need many functionalities of TensorFlow.
 
 ```python
 import tensorflow as tf
@@ -26,7 +37,7 @@ nltk.download('stopwords')
 from nltk.corpus import stopwords
 ```
 
-## Acquire Training Data
+## 1. Acquire Training Data
 
 The data that we will use to train the model can be found at the link below.
 
@@ -41,18 +52,131 @@ train_data = pd.read_csv(train_url)
 train_data
 ```
 
-PUT DATAFRAME HERE
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
 
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Unnamed: 0</th>
+      <th>title</th>
+      <th>text</th>
+      <th>fake</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>17366</td>
+      <td>Merkel: Strong result for Austria's FPO 'big c...</td>
+      <td>German Chancellor Angela Merkel said on Monday...</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>5634</td>
+      <td>Trump says Pence will lead voter fraud panel</td>
+      <td>WEST PALM BEACH, Fla.President Donald Trump sa...</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>17487</td>
+      <td>JUST IN: SUSPECTED LEAKER and “Close Confidant...</td>
+      <td>On December 5, 2017, Circa s Sara Carter warne...</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>12217</td>
+      <td>Thyssenkrupp has offered help to Argentina ove...</td>
+      <td>Germany s Thyssenkrupp, has offered assistance...</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>5535</td>
+      <td>Trump say appeals court decision on travel ban...</td>
+      <td>President Donald Trump on Thursday called the ...</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+    <tr>
+      <th>22444</th>
+      <td>10709</td>
+      <td>ALARMING: NSA Refuses to Release Clinton-Lynch...</td>
+      <td>If Clinton and Lynch just talked about grandki...</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>22445</th>
+      <td>8731</td>
+      <td>Can Pence's vow not to sling mud survive a Tru...</td>
+      <td>() - In 1990, during a close and bitter congre...</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>22446</th>
+      <td>4733</td>
+      <td>Watch Trump Campaign Try To Spin Their Way Ou...</td>
+      <td>A new ad by the Hillary Clinton SuperPac Prior...</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <th>22447</th>
+      <td>3993</td>
+      <td>Trump celebrates first 100 days as president, ...</td>
+      <td>HARRISBURG, Pa.U.S. President Donald Trump hit...</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>22448</th>
+      <td>12896</td>
+      <td>TRUMP SUPPORTERS REACT TO DEBATE: “Clinton New...</td>
+      <td>MELBOURNE, FL is a town with a population of 7...</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+<p>22449 rows × 4 columns</p>
+</div>
 
 We see that this dataset contains information about 22449 articles. Each row represents an article and there are three columns that contain the title, the full article text, and a boolean value that indicates whether the article is fake or not. This fake column is 0 when the article is true and 1 when the article contains fake news.
 
 
-## Create a Dataset
+## 2. Create a Dataset
 
-We're going to create a function called `make_dataset`. This will convert our pandas dataframe to a TensorFlow Dataset. This allows us to stay organized while creating our data pipeline. In this function, we will remove stop words from the title and text columns of each article. Stop words in English are words like "the", "and", or "but". Then we will define the input and output components of our dataset. We want the model to evaluate the title and text of the article, so these are the inputs. The output will be 0 or 1, depending if the article contains fake news or not.
+We're going to create a function called `make_dataset`. This will convert our pandas dataframe to a TensorFlow Dataset. This allows us to stay organized while creating our data pipeline. In this function, we will remove stop words from the title and text columns of each article. Stop words in English are words like "the", "and", or "but". We use a lambda function which loops through all the words, and then removes the word if it is a stopword as determined in the `nltk` package.
+
+{::options parse_block_html="true" /}
+<div class="got-help">
+A peer suggested that I add more explanation regarding the `make_dataset` function because contains many trick steps such as getting the stopwords from `nltk` and using lambda functions.
+</div>
+{::options parse_block_html="false" /}
+
+Then we will define the input and output components of our dataset. We want the model to evaluate the title and text of the article, so these are the inputs. The output will be 0 or 1, depending if the article contains fake news or not.
 
 ```python
 def make_dataset(train_data):
+  # get list of stopwords from nltk
   stop = stopwords.words('english')
 
   # remove stopwords from titles
@@ -66,14 +190,15 @@ def make_dataset(train_data):
     (
         {
             "title" : train_data[["title"]],
-            "text" : train_data["text"]
+            "text" : train_data[["text"]]
         },
         {
             "fake" : train_data[["fake"]]
         }
     )
 )
-  data.batch(100) #batching the data allows it to efficiently train in chunks
+  data.batch(100) # batching the data allows it to efficiently train in chunks
+
   return data
 ```
 
@@ -106,7 +231,7 @@ len(train), len(val)
 
 Here we see that the training data is four times larger than the validation data, which is what we expect. Because we batched the data, each value here actually represents 100 articles. Thus this sums to 22500 articles, which is roughly the amount of articles in our original pandas dataframe.
 
-## Preprocessing
+## 3. Preprocessing
 
 Before we get into the models, we need to do some data cleaning. The first step is to standardize the data. We will accomplish this by turning all the text to lower case and then removing any punctuation. This is where we use the `re` (regular expression) and `string` libraries.
 
@@ -130,7 +255,7 @@ vectorize_layer = TextVectorization(
     output_sequence_length=500)
 ```
 
-Let's apply the vectorization to the `title` and `text` columns of the dataset!
+Let's apply the vectorization to the `title` and `text` columns of the dataset! Here lambda functinos are used to apply the vectorization to all the titles and texts of the articles.
 
 ```python
 vectorize_layer.adapt(train.map(lambda x, y: x["title"]))
@@ -153,7 +278,7 @@ text_input = keras.Input(
 )
 ```
 
-## Creating the Title Model
+## 4. Creating the Title Model
 
 The first model we will create will determine whether an article contains fake news or not solely based on its title. To do so, we will use the functional API of TensorFlow. We will define a pipeline of hidden layers to process the titles. First, we explicitly define an embedding layer. This is so we can reuse it in a later model. Then we define different layers for the text data. The dropout layers prevent overfitting.
 
@@ -167,6 +292,12 @@ title_features = layers.GlobalAveragePooling1D()(title_features)
 title_features = layers.Dropout(0.2)(title_features) # prevent overfitting
 title_features = layers.Dense(32, activation='relu')(title_features)
 ```
+
+{::options parse_block_html="true" /}
+<div class="gave-help">
+I gave a suggestion to a classmate to create an embedding layer independent of the models. This allows all the models to share the embedding layer and then one single text embedding visualization can be created from it.
+</div>
+{::options parse_block_html="false" /}
 
 Now we will add an additional dense layer and then define the output. Recall, we want the output to be 0 or 1 depending on whether the article contains fake news. Since there are only 2 options for the output, the number of units of the layer is 2, and notice we name it `fake`.
 
@@ -185,41 +316,7 @@ model_title = keras.Model(
 )
 ```
 
-Let's look at our model summary to understand how the layers are working together.
-
-```python
-model_title.summary()
-```
-
-```
-Model: "model"
-_________________________________________________________________
-Layer (type)                 Output Shape              Param #   
-=================================================================
-title (InputLayer)           [(None, 1)]               0         
-_________________________________________________________________
-text_vectorization (TextVect (None, 500)               0         
-_________________________________________________________________
-embedding (Embedding)        (None, 500, 12)           60000     
-_________________________________________________________________
-dropout (Dropout)            (None, 500, 12)           0         
-_________________________________________________________________
-global_average_pooling1d (Gl (None, 12)                0         
-_________________________________________________________________
-dropout_1 (Dropout)          (None, 12)                0         
-_________________________________________________________________
-dense (Dense)                (None, 32)                416       
-_________________________________________________________________
-dense_1 (Dense)              (None, 32)                1056      
-_________________________________________________________________
-fake (Dense)                 (None, 2)                 66        
-=================================================================
-Total params: 61,538
-Trainable params: 61,538
-Non-trainable params: 0
-```
-
-This may seem confusing, so we can look at a diagram that represents the layers of the model.
+Let's look at a diagram that represents the layers of the model to understand its structure.
 
 ```python
 keras.utils.plot_model(model_title)
@@ -255,41 +352,21 @@ Epoch 2/20
 180/180 [==============================] - 3s 16ms/step - loss: 0.6411 - accuracy: 0.6493 - val_loss: 0.2182 - val_accuracy: 0.9508
 Epoch 3/20
 180/180 [==============================] - 3s 16ms/step - loss: 0.1736 - accuracy: 0.9507 - val_loss: 0.1064 - val_accuracy: 0.9615
-Epoch 4/20
-180/180 [==============================] - 3s 16ms/step - loss: 0.0946 - accuracy: 0.9681 - val_loss: 0.0925 - val_accuracy: 0.9675
-Epoch 5/20
-180/180 [==============================] - 3s 15ms/step - loss: 0.0807 - accuracy: 0.9736 - val_loss: 0.0728 - val_accuracy: 0.9748
-Epoch 6/20
-180/180 [==============================] - 3s 16ms/step - loss: 0.0676 - accuracy: 0.9761 - val_loss: 0.0546 - val_accuracy: 0.9811
-Epoch 7/20
-180/180 [==============================] - 3s 17ms/step - loss: 0.0521 - accuracy: 0.9819 - val_loss: 0.0460 - val_accuracy: 0.9829
-Epoch 8/20
-180/180 [==============================] - 3s 17ms/step - loss: 0.0586 - accuracy: 0.9788 - val_loss: 0.0435 - val_accuracy: 0.9855
-Epoch 9/20
-180/180 [==============================] - 3s 17ms/step - loss: 0.0491 - accuracy: 0.9820 - val_loss: 0.0306 - val_accuracy: 0.9893
-Epoch 10/20
-180/180 [==============================] - 3s 16ms/step - loss: 0.0526 - accuracy: 0.9808 - val_loss: 0.0380 - val_accuracy: 0.9889
-Epoch 11/20
-180/180 [==============================] - 3s 16ms/step - loss: 0.0396 - accuracy: 0.9867 - val_loss: 0.0269 - val_accuracy: 0.9915
-Epoch 12/20
-180/180 [==============================] - 3s 16ms/step - loss: 0.0370 - accuracy: 0.9870 - val_loss: 0.0298 - val_accuracy: 0.9909
-Epoch 13/20
-180/180 [==============================] - 3s 17ms/step - loss: 0.0375 - accuracy: 0.9879 - val_loss: 0.0258 - val_accuracy: 0.9927
-Epoch 14/20
-180/180 [==============================] - 3s 16ms/step - loss: 0.0312 - accuracy: 0.9895 - val_loss: 0.0303 - val_accuracy: 0.9920
-Epoch 15/20
-180/180 [==============================] - 3s 17ms/step - loss: 0.0331 - accuracy: 0.9892 - val_loss: 0.0259 - val_accuracy: 0.9920
-Epoch 16/20
-180/180 [==============================] - 3s 17ms/step - loss: 0.0270 - accuracy: 0.9912 - val_loss: 0.0268 - val_accuracy: 0.9927
-Epoch 17/20
-180/180 [==============================] - 3s 16ms/step - loss: 0.0243 - accuracy: 0.9927 - val_loss: 0.0272 - val_accuracy: 0.9906
+.....
 Epoch 18/20
 180/180 [==============================] - 3s 16ms/step - loss: 0.0259 - accuracy: 0.9915 - val_loss: 0.0187 - val_accuracy: 0.9947
 Epoch 19/20
 180/180 [==============================] - 3s 17ms/step - loss: 0.0245 - accuracy: 0.9921 - val_loss: 0.0205 - val_accuracy: 0.9947
 Epoch 20/20
 180/180 [==============================] - 3s 16ms/step - loss: 0.0238 - accuracy: 0.9922 - val_loss: 0.0163 - val_accuracy: 0.9947
-```            
+```
+
+{::options parse_block_html="true" /}
+<div class="got-help">
+Initially, I printed the output from all 20 epochs, and it was quite overwhelming. A peer suggested that I condense these outputs, since the following graph shows more clearly how the accuracy of the model changes with each epoch.
+</div>
+{::options parse_block_html="false" /}
+
 
 After 20 epochs, the model is has over 99% accuracy on both the training and validation data. This is great! Let's visualize the accuracy over time.
 
@@ -304,13 +381,19 @@ plt.legend()
 
 We can see that the training and validation data appear to have similar accuracy, which indicates we did not overfit the model. Additionally, the accuracies of both have "leveled off" so we probably would not benefit from more training. Our first model is complete!
 
-## Creating the Text Model
+{::options parse_block_html="true" /}
+<div class="gave-help">
+I gave a suggestion to a classmate to plot the accuracy of the model. This makes it easier to see when the model is done training or whether it could benefit from additional training.
+</div>
+{::options parse_block_html="false" /}
+
+## 5. Creating the Text Model
 
 For the second model, we will determine whether an article contains fake news or not solely based on the article text. This process will be very similar to the process above for creating the title model. We begin by creating some layers for the text input. Notice we use the embedding layer that we defined above.
 
 ```python
 text_features = vectorize_layer(text_input) # vectorize the text
-text_features = embedding(text_features) #use defined embedding layer
+text_features = embedding(text_features) # use defined embedding layer
 text_features = layers.Dropout(0.2)(text_features) # prevent overfitting
 text_features = layers.GlobalAveragePooling1D()(text_features)
 text_features = layers.Dropout(0.2)(text_features) # prevent overfitting
@@ -331,41 +414,7 @@ model_text = keras.Model(
 )
 ```
 
-The summary of the model shows its different layers and details regarding the shape of the data and how many parameters there are.
-
-```python
-model_text.summary()
-```
-
-```
-Model: "model_1"
-_________________________________________________________________
-Layer (type)                 Output Shape              Param #   
-=================================================================
-text (InputLayer)            [(None, 1)]               0         
-_________________________________________________________________
-text_vectorization (TextVect (None, 500)               0         
-_________________________________________________________________
-embedding (Embedding)        (None, 500, 12)           60000     
-_________________________________________________________________
-dropout_2 (Dropout)          (None, 500, 12)           0         
-_________________________________________________________________
-global_average_pooling1d_1 ( (None, 12)                0         
-_________________________________________________________________
-dropout_3 (Dropout)          (None, 12)                0         
-_________________________________________________________________
-dense_2 (Dense)              (None, 32)                416       
-_________________________________________________________________
-dense_3 (Dense)              (None, 32)                1056      
-_________________________________________________________________
-fake (Dense)                 (None, 2)                 66        
-=================================================================
-Total params: 61,538
-Trainable params: 61,538
-Non-trainable params: 0
-```
-
-Let's also look at the diagram to better understand the structure of the model.
+Let's look at the diagram to better understand the structure of the model.
 
 ```python
 keras.utils.plot_model(model_text)
@@ -399,34 +448,7 @@ Epoch 2/20
 180/180 [==============================] - 4s 24ms/step - loss: 0.1857 - accuracy: 0.9358 - val_loss: 0.1392 - val_accuracy: 0.9604
 Epoch 3/20
 180/180 [==============================] - 4s 25ms/step - loss: 0.1451 - accuracy: 0.9579 - val_loss: 0.1103 - val_accuracy: 0.9715
-Epoch 4/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.1024 - accuracy: 0.9719 - val_loss: 0.0910 - val_accuracy: 0.9746
-Epoch 5/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0864 - accuracy: 0.9749 - val_loss: 0.0700 - val_accuracy: 0.9826
-Epoch 6/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0731 - accuracy: 0.9818 - val_loss: 0.0550 - val_accuracy: 0.9846
-Epoch 7/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0649 - accuracy: 0.9839 - val_loss: 0.0453 - val_accuracy: 0.9895
-Epoch 8/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0526 - accuracy: 0.9873 - val_loss: 0.0471 - val_accuracy: 0.9889
-Epoch 9/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0485 - accuracy: 0.9888 - val_loss: 0.0340 - val_accuracy: 0.9927
-Epoch 10/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0378 - accuracy: 0.9915 - val_loss: 0.0317 - val_accuracy: 0.9933
-Epoch 11/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0319 - accuracy: 0.9927 - val_loss: 0.0256 - val_accuracy: 0.9951
-Epoch 12/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0272 - accuracy: 0.9935 - val_loss: 0.0210 - val_accuracy: 0.9962
-Epoch 13/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0289 - accuracy: 0.9931 - val_loss: 0.0189 - val_accuracy: 0.9969
-Epoch 14/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0218 - accuracy: 0.9959 - val_loss: 0.0153 - val_accuracy: 0.9976
-Epoch 15/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0194 - accuracy: 0.9951 - val_loss: 0.0132 - val_accuracy: 0.9973
-Epoch 16/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0229 - accuracy: 0.9943 - val_loss: 0.0141 - val_accuracy: 0.9973
-Epoch 17/20
-180/180 [==============================] - 5s 25ms/step - loss: 0.0157 - accuracy: 0.9961 - val_loss: 0.0130 - val_accuracy: 0.9976
+.....
 Epoch 18/20
 180/180 [==============================] - 5s 25ms/step - loss: 0.0124 - accuracy: 0.9969 - val_loss: 0.0078 - val_accuracy: 0.9987
 Epoch 19/20
@@ -449,7 +471,7 @@ plt.legend()
 
 We can see that the validation data has a slightly higher accuracy than the training data, so we did not overfit the model. Both lines have "leveled off" so we are done training this model!
 
-## Combined Model
+## 6. Creating the Combined Model
 
 The last model will use both the title and text of the article to determine whether the article contains fake news. Since we have already defined the layers for `title_features` and `text_features`, we can combine them to create our new model.
 
@@ -469,56 +491,7 @@ model = keras.Model(
 )
 ```
 
-Let's look at the summary for the model.
-
-```python
-model.summary()
-```
-
-```
-Model: "model_2"
-__________________________________________________________________________________________________
-Layer (type)                    Output Shape         Param #     Connected to                     
-==================================================================================================
-title (InputLayer)              [(None, 1)]          0                                            
-__________________________________________________________________________________________________
-text (InputLayer)               [(None, 1)]          0                                            
-__________________________________________________________________________________________________
-text_vectorization (TextVectori (None, 500)          0           title[0][0]                      
-                                                                 text[0][0]                       
-__________________________________________________________________________________________________
-embedding (Embedding)           (None, 500, 12)      60000       text_vectorization[0][0]         
-                                                                 text_vectorization[1][0]         
-__________________________________________________________________________________________________
-dropout (Dropout)               (None, 500, 12)      0           embedding[0][0]                  
-__________________________________________________________________________________________________
-dropout_2 (Dropout)             (None, 500, 12)      0           embedding[1][0]                  
-__________________________________________________________________________________________________
-global_average_pooling1d (Globa (None, 12)           0           dropout[0][0]                    
-__________________________________________________________________________________________________
-global_average_pooling1d_1 (Glo (None, 12)           0           dropout_2[0][0]                  
-__________________________________________________________________________________________________
-dropout_1 (Dropout)             (None, 12)           0           global_average_pooling1d[0][0]   
-__________________________________________________________________________________________________
-dropout_3 (Dropout)             (None, 12)           0           global_average_pooling1d_1[0][0]
-__________________________________________________________________________________________________
-dense (Dense)                   (None, 32)           416         dropout_1[0][0]                  
-__________________________________________________________________________________________________
-dense_2 (Dense)                 (None, 32)           416         dropout_3[0][0]                  
-__________________________________________________________________________________________________
-concatenate (Concatenate)       (None, 64)           0           dense[0][0]                      
-                                                                 dense_2[0][0]                    
-__________________________________________________________________________________________________
-dense_4 (Dense)                 (None, 32)           2080        concatenate[0][0]                
-__________________________________________________________________________________________________
-fake (Dense)                    (None, 2)            66          dense_4[0][0]                    
-==================================================================================================
-Total params: 62,978
-Trainable params: 62,978
-Non-trainable params: 0
-```
-
-There is a lot goin on here. Notice that unlike the previous two models, there is an additional column that shows how the layers are connected. Let's visualize this.
+Let's visualize the structure of the model.
 
 ```python
 keras.utils.plot_model(model)
@@ -529,7 +502,7 @@ keras.utils.plot_model(model)
 Notice how both the text and title go through the same embedding layer. Recall, we defined our own embedding layer and then had both the title and text use it. Another cool thing to note is how the two "branches" of layers come together at the concatenate layer. We explicitly did this when we created `main`. Let's compile our model and train it.
 
 ```python
-# compule the model
+# compile the model
 model.compile(optimizer = "adam",
               loss = losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy']
@@ -548,34 +521,7 @@ Epoch 2/20
 180/180 [==============================] - 7s 37ms/step - loss: 0.0299 - accuracy: 0.9975 - val_loss: 0.0136 - val_accuracy: 0.9987
 Epoch 3/20
 180/180 [==============================] - 7s 37ms/step - loss: 0.0148 - accuracy: 0.9978 - val_loss: 0.0099 - val_accuracy: 0.9987
-Epoch 4/20
-180/180 [==============================] - 7s 37ms/step - loss: 0.0087 - accuracy: 0.9989 - val_loss: 0.0080 - val_accuracy: 0.9987
-Epoch 5/20
-180/180 [==============================] - 7s 37ms/step - loss: 0.0065 - accuracy: 0.9991 - val_loss: 0.0050 - val_accuracy: 0.9987
-Epoch 6/20
-180/180 [==============================] - 7s 37ms/step - loss: 0.0060 - accuracy: 0.9987 - val_loss: 0.0027 - val_accuracy: 0.9996
-Epoch 7/20
-180/180 [==============================] - 7s 38ms/step - loss: 0.0035 - accuracy: 0.9992 - val_loss: 0.0029 - val_accuracy: 0.9998
-Epoch 8/20
-180/180 [==============================] - 7s 38ms/step - loss: 0.0036 - accuracy: 0.9994 - val_loss: 0.0018 - val_accuracy: 0.9998
-Epoch 9/20
-180/180 [==============================] - 7s 38ms/step - loss: 0.0042 - accuracy: 0.9990 - val_loss: 0.0016 - val_accuracy: 0.9996
-Epoch 10/20
-180/180 [==============================] - 7s 37ms/step - loss: 0.0031 - accuracy: 0.9993 - val_loss: 0.0023 - val_accuracy: 0.9998
-Epoch 11/20
-180/180 [==============================] - 7s 37ms/step - loss: 0.0021 - accuracy: 0.9992 - val_loss: 7.6552e-04 - val_accuracy: 1.0000
-Epoch 12/20
-180/180 [==============================] - 7s 38ms/step - loss: 0.0019 - accuracy: 0.9996 - val_loss: 6.2970e-04 - val_accuracy: 1.0000
-Epoch 13/20
-180/180 [==============================] - 7s 37ms/step - loss: 0.0010 - accuracy: 0.9998 - val_loss: 7.9002e-04 - val_accuracy: 0.9998
-Epoch 14/20
-180/180 [==============================] - 7s 38ms/step - loss: 0.0014 - accuracy: 0.9997 - val_loss: 7.3809e-04 - val_accuracy: 0.9998
-Epoch 15/20
-180/180 [==============================] - 7s 37ms/step - loss: 8.2648e-04 - accuracy: 0.9998 - val_loss: 0.0026 - val_accuracy: 0.9991
-Epoch 16/20
-180/180 [==============================] - 7s 38ms/step - loss: 0.0017 - accuracy: 0.9993 - val_loss: 2.5253e-04 - val_accuracy: 1.0000
-Epoch 17/20
-180/180 [==============================] - 7s 38ms/step - loss: 5.8991e-04 - accuracy: 1.0000 - val_loss: 4.9001e-04 - val_accuracy: 1.0000
+.....
 Epoch 18/20
 180/180 [==============================] - 7s 38ms/step - loss: 6.7730e-04 - accuracy: 0.9998 - val_loss: 1.0663e-04 - val_accuracy: 1.0000
 Epoch 19/20
@@ -599,7 +545,7 @@ We can see that the validation and training data reaches a similar level so we d
 
 Since all three models are able to detect fake news in articles with at least 99% accuracy, I would recommend using the model with just title as it is the most efficient. However, if you are striving for the best accuracy, use the model with both title and text.
 
-## Testing Out the Model
+## 7. Testing Out the Model
 
 Now, let's test the model on data that it has never seen before. In this section I will use the `model` which has both `title` and `text` as inputs, but you could use any of the three models we created.
 
@@ -626,7 +572,7 @@ model.evaluate(test_results)
 Wow! We achieved 99% accuracy on the test data. Our model is great at detecting fake news in articles.
 
 
-## Visualizing
+## 8. Visualizing
 
 So our model can predict fake news with over 99% accuracy, but what has it learned? Let's visualize this.
 
@@ -645,7 +591,7 @@ embedding_df = pd.DataFrame({
 })
 ```
 
-Remember how we created an embedding layer. A word embedding allows us to visualize what the model learned about the words. Words that are similar should be close together while words that are different are far apart. We will use plotly to create an interactive plot so we can see how the words are related to each other. The words that the model associates with fake news will tend towards one side and the words that the model associates with real news will be on the other.
+Remember how we created an embedding layer? A word embedding allows us to visualize what the model learned about the words. Words that are similar should be close together while words that are different are far apart. We will use `plotly` to create an interactive plot so we can see how the words are related to each other. The words that the model associates with fake news will tend towards one side and the words that the model associates with real news will be on the other.
 
 ```python
 import plotly.express as px
