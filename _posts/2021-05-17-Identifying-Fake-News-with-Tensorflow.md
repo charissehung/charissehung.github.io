@@ -255,7 +255,7 @@ vectorize_layer = TextVectorization(
     output_sequence_length=500)
 ```
 
-Let's apply the vectorization to the `title` and `text` columns of the dataset! Here lambda functinos are used to apply the vectorization to all the titles and texts of the articles.
+Let's apply the vectorization to the `title` and `text` columns of the dataset! Here lambda functions are used to apply the vectorization to all the titles and texts of the articles.
 
 ```python
 vectorize_layer.adapt(train.map(lambda x, y: x["title"]))
